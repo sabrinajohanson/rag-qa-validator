@@ -1,0 +1,68 @@
+[
+  {
+    "id": "001",
+    "question": "How do I authenticate requests to the TaskFlow API?",
+    "contexts": [
+      "TaskFlow API v2.1 - Authentication: All requests must include an Authorization header in the format 'Authorization: Bearer <api_key>'. API keys are generated from the Developer Settings page and do not expire unless manually revoked."
+    ],
+    "answer": "You authenticate by sending an Authorization header with the value 'Bearer <api_key>', using an API key generated from the Developer Settings page.",
+    "ground_truth": "Requests are authenticated with an Authorization header in the format 'Bearer <api_key>'. API keys are created in Developer Settings and remain valid until manually revoked.",
+    "expected_verdict": "pass",
+    "note": "Baseline case: answer is a faithful, accurate restatement of the retrieved context. Should pass all four metrics."
+  },
+  {
+    "id": "002",
+    "question": "What is the rate limit for the TaskFlow API?",
+    "contexts": [
+      "TaskFlow API v2.1 - Rate Limiting: Each API key is limited to 100 requests per minute. Requests beyond this limit receive a 429 Too Many Requests response with a Retry-After header."
+    ],
+    "answer": "The TaskFlow API allows up to 1000 requests per minute per API key, and includes a burst allowance of an extra 200 requests for short traffic spikes.",
+    "ground_truth": "The rate limit is 100 requests per minute per API key. Exceeding it returns a 429 response with a Retry-After header.",
+    "expected_verdict": "fail",
+    "note": "Intentional hallucination: the answer invents both the 1000 req/min figure and the burst allowance, neither of which appear in the retrieved context. Targets faithfulness."
+  },
+  {
+    "id": "003",
+    "question": "Does the TaskFlow API support automatic webhook retries?",
+    "contexts": [
+      "TaskFlow API v2.1 - Webhooks: Webhook events are sent once when triggered. TaskFlow does not automatically retry failed webhook deliveries. If reliable delivery is required, poll the /events endpoint as a fallback."
+    ],
+    "answer": "Yes, TaskFlow automatically retries failed webhook deliveries using exponential backoff for up to 24 hours before giving up.",
+    "ground_truth": "No. Webhooks are sent once with no automatic retry. The documented fallback for reliable delivery is polling the /events endpoint.",
+    "expected_verdict": "fail",
+    "note": "Intentional hallucination: the answer fabricates a retry policy (exponential backoff, 24h window) that directly contradicts the retrieved context. Targets faithfulness."
+  },
+  {
+    "id": "004",
+    "question": "How do I paginate through results from the /tasks endpoint?",
+    "contexts": [
+      "TaskFlow API v2.1 - Pagination: The /tasks endpoint supports cursor-based pagination. Pass a 'cursor' query parameter with the value of 'next_cursor' from the previous response to fetch the next page. Page size defaults to 25 and can be set with 'page_size' (max 100)."
+    ],
+    "answer": "To use the TaskFlow API, include an Authorization header with your Bearer token on every request, or your calls will be rejected with a 401 error.",
+    "ground_truth": "Pagination is cursor-based: pass the 'next_cursor' value from the previous response as the 'cursor' query parameter. Default page size is 25, adjustable up to 100 with 'page_size'.",
+    "expected_verdict": "fail",
+    "note": "Off-topic answer: the retrieved context is correct and relevant, but the generated answer addresses authentication instead of pagination. Targets answer_relevancy."
+  },
+  {
+    "id": "005",
+    "question": "What HTTP status codes does the TaskFlow API return for validation errors?",
+    "contexts": [
+      "TaskFlow API v2.1 - Errors: A 400 Bad Request is returned when the request body is malformed JSON."
+    ],
+    "answer": "The TaskFlow API returns a 400 Bad Request when the request body is malformed JSON.",
+    "ground_truth": "TaskFlow returns 400 Bad Request for malformed JSON, and 422 Unprocessable Entity when the JSON is well-formed but fails field-level validation (e.g. missing required fields or invalid enum values).",
+    "expected_verdict": "fail",
+    "note": "Incomplete retrieval: the retrieved context is missing the 422 Unprocessable Entity chunk present in the ground truth. The answer is faithful to what was retrieved, but the retrieval itself is incomplete. Targets context_recall."
+  },
+  {
+    "id": "006",
+    "question": "Can I delete a project that still has active tasks?",
+    "contexts": [
+      "TaskFlow API v2.1 - Projects: DELETE /projects/{id} will return a 409 Conflict if the project has active (non-archived) tasks. To force deletion anyway, include the query parameter '?force=true', which also archives all tasks under the project."
+    ],
+    "answer": "Not by default - deleting a project with active tasks gives you a 409 Conflict. If you really want to remove it anyway, add 'force=true' to the delete request, which also archives the project's tasks in the process.",
+    "ground_truth": "By default, no: DELETE /projects/{id} returns 409 Conflict if active tasks exist. Adding '?force=true' forces the deletion and archives the tasks.",
+    "expected_verdict": "pass",
+    "note": "Faithful paraphrase, not verbatim: wording and sentence order differ from both context and ground truth, but no facts are added, dropped, or changed. This is the case that originally triggered the faithfulness threshold recalibration (see README > Findings)."
+  }
+]

@@ -1,0 +1,8 @@
+ragas>=0.2.10
+datasets>=2.19.0
+openai>=1.40.0
+langchain-openai>=0.2.0
+pandas>=2.2.0
+python-dotenv>=1.0.1
+pytest>=8.0.0
+allure-pytest>=2.13.5
