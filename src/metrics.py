@@ -14,6 +14,23 @@ from ragas.metrics import (
     context_recall,
 )
 
+from langchain_openai import ChatOpenAI
+from ragas.llms import LangchainLLMWrapper
+
+# Explicitly pinned to a cheap, deterministic model so the live suite never
+# silently falls back to a more expensive default. See README > Running
+# Locally for the cost note.
+EVAL_MODEL = "gpt-4o-mini"
+
+def get_judge_llm() -> LangchainLLMWrapper:
+    """
+    Build the LLM used internally by RAGAS to score each metric.
+
+    Wrapped explicitly (instead of relying on RAGAS's default) so the model
+    and cost are pinned and visible in code, not implicit.
+    """
+    return LangchainLLMWrapper(ChatOpenAI(model=EVAL_MODEL, temperature=0))
+
 # Metric instances passed to ragas.evaluate()
 METRICS = [faithfulness, answer_relevancy, context_precision, context_recall]
 

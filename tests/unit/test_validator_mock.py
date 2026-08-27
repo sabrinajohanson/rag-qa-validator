@@ -1,7 +1,10 @@
 """
 Mock tests for the RAG QA validator - no OpenAI calls, no API cost.
 
-Patches ragas.evaluate() with canned scores so the threshold/verdict logic and the results.json export shape can be exercised on every push, without depending on a live LLM call. This is the suite that runs in mock-ci.yml.
+Patches ragas.evaluate() and src.validator.get_judge_llm() with canned
+values so the threshold/verdict logic and the results.json export shape
+can be exercised on every push, without depending on a live LLM call or a
+real OPENAI_API_KEY. This is the suite that runs in mock-ci.yml.
 """
 
 import json
@@ -11,6 +14,7 @@ import pandas as pd
 
 from src.metrics import apply_verdict, THRESHOLDS
 from src import validator
+
 
 def test_apply_verdict_all_pass():
     scores = {
@@ -23,6 +27,7 @@ def test_apply_verdict_all_pass():
     assert result["overall"] == "pass"
     assert all(m["verdict"] == "pass" for m in result["metrics"].values())
 
+
 def test_apply_verdict_faithfulness_fail():
     scores = {
         "faithfulness": 0.50,  # below 0.80 threshold
@@ -34,11 +39,13 @@ def test_apply_verdict_faithfulness_fail():
     assert result["overall"] == "fail"
     assert result["metrics"]["faithfulness"]["verdict"] == "fail"
 
+
 def test_apply_verdict_boundary_score_passes():
     # A score exactly equal to the threshold should pass (>=, not >)
     scores = {"faithfulness": THRESHOLDS["faithfulness"]}
     result = apply_verdict(scores)
     assert result["metrics"]["faithfulness"]["verdict"] == "pass"
+
 
 def test_apply_verdict_missing_metric_is_skipped():
     # If a metric key is absent from scores, it should not appear in the
@@ -48,8 +55,15 @@ def test_apply_verdict_missing_metric_is_skipped():
     assert "answer_relevancy" not in result["metrics"]
     assert result["overall"] == "pass"
 
+
+@patch("src.validator.get_judge_llm")
 @patch("src.validator.evaluate")
-def test_run_validation_exports_expected_shape(mock_evaluate, tmp_path):
+def test_run_validation_exports_expected_shape(mock_evaluate, mock_get_judge_llm, tmp_path):
+    # get_judge_llm() would normally build a real ChatOpenAI client, which
+    # requires OPENAI_API_KEY just to construct. Replace it with a plain
+    # stand-in so this test never needs a real key.
+    mock_get_judge_llm.return_value = MagicMock()
+
     # Fake RAGAS scores for 2 cases: one clean pass, one faithfulness fail
     fake_df = pd.DataFrame([
         {"faithfulness": 0.95, "answer_relevancy": 0.90,

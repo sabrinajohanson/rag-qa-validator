@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 from ragas import evaluate, EvaluationDataset, SingleTurnSample
 
-from src.metrics import METRICS, apply_verdict
+from src.metrics import METRICS, apply_verdict, get_judge_llm
 
 def load_dataset(dataset_path: str) -> tuple[EvaluationDataset, list[dict]]:
     """
@@ -57,7 +57,7 @@ def run_validation(dataset_path: str, output_path: str) -> dict:
     """
     eval_dataset, raw_cases = load_dataset(dataset_path)
 
-    result = evaluate(dataset=eval_dataset, metrics=METRICS)
+    result = evaluate(dataset=eval_dataset, metrics=METRICS, llm=get_judge_llm())
     scores_df = result.to_pandas()
 
     case_results = []
